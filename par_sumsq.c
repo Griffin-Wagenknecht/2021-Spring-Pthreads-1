@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include <pthread.h>
 
+//git add -A
+//git commit -m "message"
+//git push
 // aggregate variables
 long sum = 0;
 long odd = 0;
