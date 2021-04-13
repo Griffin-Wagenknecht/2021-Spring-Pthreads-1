@@ -9,6 +9,7 @@
 //git add -A
 //git commit -m "message"
 //git push
+
 // aggregate variables
 long sum = 0;
 long odd = 0;
@@ -103,6 +104,23 @@ struct node* deleteFirst() {
    return tempLink;
 }
 
+int reverseCheck = 0;
+void reverse(struct node** head_ref) {
+   struct node* prev   = NULL;
+   struct node* current = *head_ref;
+   struct node* next;
+	
+   while (current != NULL) {
+      next  = current->next;
+      current->next = prev;   
+      prev = current;
+      current = next;
+   }
+	
+   *head_ref = prev;
+}
+
+
 
 //is list empty
 bool isEmpty() {
@@ -118,8 +136,13 @@ void* routine()
     	{
     		break;
     	}
-    	pthread_mutex_lock(&mutex);
+    	pthread_mutex_lock(&mutex);  		
     	volatile struct node *x = head;
+    	if(reverseCheck == 0)
+    	{
+    		reverse(&x);
+    		reverseCheck == 1;
+    	}
     	//busy[pthread_self()]=true;
     	if(x->key == 'p')
     	{
