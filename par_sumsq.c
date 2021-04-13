@@ -105,12 +105,14 @@ struct node* deleteFirst() {
 }
 
 int reverseCheck = 0;
-void reverse(struct node** head_ref) {
+void reverse(struct node** head_ref) 
+{
    struct node* prev   = NULL;
    struct node* current = *head_ref;
    struct node* next;
 	
-   while (current != NULL) {
+   while (current != NULL) 
+   {
       next  = current->next;
       current->next = prev;   
       prev = current;
