@@ -20,9 +20,8 @@ char volatile action;
 long volatile num;
 pthread_mutex_t mutex;
 pthread_mutex_t mutexList;
-# define SIZE 10000
 char holder;
-volatile bool busy[SIZE];
+
 
 
 // function prototypes
@@ -79,6 +78,7 @@ volatile struct node *current = NULL;
 
 int flag=0;
 //insert link at the first location
+
 void insertFirst(int key, int data) {
    //create a link
    volatile struct node *link = (struct node*) malloc(sizeof(struct node));
@@ -107,23 +107,6 @@ struct node* deleteFirst() {
    return tempLink;
 }
 
-/*int reverseCheck = 0;
-void reverse(struct node** head_ref) 
-{
-   struct node* prev   = NULL;
-   struct node* current = *head_ref;
-   struct node* next;
-	
-   while (current != NULL) 
-   {
-      next  = current->next;
-      current->next = prev;   
-      prev = current;
-      current = next;
-   }
-	
-   *head_ref = prev;
-} */
 
 
 //is list empty
@@ -142,19 +125,12 @@ void* routine()
     	}
     	pthread_mutex_lock(&mutex);  		
     	volatile struct node *x = head;
-    	/*if(reverseCheck == 0)
-    	{
-    		reverse(&x);
-    		reverseCheck == 1;
-    	}*/
-    	//busy[pthread_self()]=true;
     	if(x->key == 'p')
     	{
     		pthread_mutex_unlock(&mutex);
     		calculate_square(x->data);
     		pthread_mutex_lock(&mutex);
     		deleteFirst();  
-    		//busy[pthread_self()]=false;
     		pthread_mutex_unlock(&mutex);		
     	}
     	if(x->key == 'w')
@@ -163,7 +139,6 @@ void* routine()
     		sleep(x->data);
     		pthread_mutex_lock(&mutex);
     		deleteFirst();  
-    		//busy[pthread_self()]=false;
     		pthread_mutex_unlock(&mutex);		
     	}	
     	
@@ -203,12 +178,16 @@ int main(int argc, char* argv[])
   
  
 
+
   
    while (fscanf(fin, "%c %ld\n", &action, &num) == 2) 
    {
       if (action == 'p')          // process, do some work
       {
+      	pthread_mutex_lock(&mutexList);
       	insertFirst(action,num);
+      	pthread_cond_signal(&waitCond);
+      	pthread_mutex_unlock(&mutexList);
       	//calculate_square(num);
       }
      else if (action == 'w')     // wait, nothing new happening
@@ -224,18 +203,20 @@ int main(int argc, char* argv[])
   }
 	
 	printf("File has been scanned \n");
-     for (int i = 0; i < n; i++)
+
+      for (int i = 0; i < n; i++)
         {
             if (pthread_create(&th[i], NULL, &routine, NULL) != 0) 
                 {
                     perror("Failed to create thread");
                     return 1;
                 }
-        }    
-
-
+        }   
   
   fclose(fin);
+  pthread_mutex_lock(&mutexList);
+  pthread_cond_broadcast(&waitCond);
+  pthread_mutex_unlock(&mutexList);
   
       for (int i = 0; i < n; i++) 
     {
