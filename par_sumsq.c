@@ -65,53 +65,74 @@ void calculate_square(long number)
 
 
 
-//Linked List
-struct  node 
+typedef struct Task
 {
-   int volatile data;
-   int volatile key;
-   volatile struct node *next;
-};
+    long t;                 //time 
+    struct Task* next;      //pointer to next task 
+} Task;
 
-volatile struct  node *head = NULL;
-volatile struct node *current = NULL;
+// Queue that holds a task
+typedef struct TaskQueue
+{
+    struct Task* head;
+} TaskQueue;
 
-int flag=0;
-//insert link at the first location
+//ads a new task
+bool addTask(TaskQueue* queue, long t)
+{
+    Task* temp = (Task*)malloc(sizeof(struct Task));
+    temp->t = t;
+    temp->next = NULL;
 
-void insertFirst(int key, int data) {
-   //create a link
-   volatile struct node *link = (struct node*) malloc(sizeof(struct node));
-	
-   link->key = key;
-   link->data = data;
-	
-   //point it to old first node
-   link->next = head;
-	
-   //point first to new first node
-   head = link;
+    if(queue->head == NULL)
+    {
+         queue->head = temp;
+    }
+    else
+    {
+        Task* curr = queue->head;
+        while(curr->next != NULL)
+        {
+            curr = curr->next;
+        }
+        curr->next = temp;
+    }
+    return 1;
 }
 
-   volatile struct node  *tempLink;
-//delete first item
-struct node* deleteFirst() {
+//pops the top of the queue
+long popTask(TaskQueue* queue)
+{
+    Task* curr = queue->head;
+    if(curr != NULL)
+    {
+        queue->head = curr->next;
+    }
+    else
+    {
+        return -1;
+    }
 
-   //save reference to first link
-   tempLink=head;
-	
-   //mark next to first link as first 
-   head = head->next;
-	
-   //return the deleted link
-   return tempLink;
+    long headVal = curr->t;
+    free(curr);
+    
+    return headVal;
+}
+//deletes queue
+void delQueue(TaskQueue* queue)
+{
+    if(queue == NULL) return;
+    while(queue->head != NULL) popTask(queue);
+    free(queue);
 }
 
+//new queue
+TaskQueue* newQueue()
+{
+    TaskQueue *temp = (TaskQueue*)malloc(sizeof(struct TaskQueue));
+    temp->head = NULL;
 
-
-//is list empty
-bool isEmpty() {
-   return head == NULL;
+    return temp;
 }
 
 void* routine()
