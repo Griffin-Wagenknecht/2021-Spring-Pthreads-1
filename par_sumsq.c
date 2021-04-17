@@ -19,6 +19,7 @@ bool done = false;
 char volatile action;
 long volatile num;
 pthread_mutex_t mutex;
+pthread_mutex_t mutexList;
 # define SIZE 10000
 char holder;
 volatile bool busy[SIZE];
@@ -41,6 +42,7 @@ void calculate_square(long number)
   sleep(number);
 
   // let's add this to our (global) sum
+  pthread_mutex_lock(&mutex);
   sum += the_square;
 
   // now we also tabulate some (meaningless) statistics
@@ -58,6 +60,7 @@ void calculate_square(long number)
   if (number > max) {
     max = number;
   }
+  pthread_mutex_unlock(&mutex);
 }
 
 
@@ -104,7 +107,7 @@ struct node* deleteFirst() {
    return tempLink;
 }
 
-int reverseCheck = 0;
+/*int reverseCheck = 0;
 void reverse(struct node** head_ref) 
 {
    struct node* prev   = NULL;
@@ -120,8 +123,7 @@ void reverse(struct node** head_ref)
    }
 	
    *head_ref = prev;
-}
-
+} */
 
 
 //is list empty
@@ -140,11 +142,11 @@ void* routine()
     	}
     	pthread_mutex_lock(&mutex);  		
     	volatile struct node *x = head;
-    	if(reverseCheck == 0)
+    	/*if(reverseCheck == 0)
     	{
     		reverse(&x);
     		reverseCheck == 1;
-    	}
+    	}*/
     	//busy[pthread_self()]=true;
     	if(x->key == 'p')
     	{
@@ -183,6 +185,8 @@ int main(int argc, char* argv[])
     char *v = argv[2];
     int n = atoi(v);	
     pthread_mutex_init(&mutex, NULL);
+    pthread_mutex_init(&mutexList,NULL);
+    pthread_cond_t waitCond = PTHREAD_COND_INITIALIZER;
     
     
   // check and parse command line options
@@ -222,7 +226,7 @@ int main(int argc, char* argv[])
 	printf("File has been scanned \n");
      for (int i = 0; i < n; i++)
         {
-            if (pthread_create(th + i, NULL, &routine, NULL) != 0) 
+            if (pthread_create(&th[i], NULL, &routine, NULL) != 0) 
                 {
                     perror("Failed to create thread");
                     return 1;
@@ -246,11 +250,11 @@ int main(int argc, char* argv[])
   printf("%ld %ld %ld %ld\n", sum, odd, min, max);
   // clean up and return
   pthread_mutex_destroy(&mutex);
+  pthread_mutex_destroy(&mutexList);
   printf("End\n");
 
   return (EXIT_SUCCESS);
 }
-
 
 
 
