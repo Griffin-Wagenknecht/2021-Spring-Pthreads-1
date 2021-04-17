@@ -6,21 +6,17 @@
 #include <unistd.h>
 #include <pthread.h>
 
-//git add -A
-//git commit -m "message"
-//git push
-
 // aggregate variables
 long sum = 0;
 long odd = 0;
 long min = INT_MAX;
 long max = INT_MIN;
-bool done = false;
 char volatile action;
 long volatile num;
+volatile bool done = false;
 pthread_mutex_t mutex;
 pthread_mutex_t mutexList;
-char holder;
+pthread_cond_t waitCond = PTHREAD_COND_INITIALIZER;
 
 
 
@@ -135,54 +131,37 @@ TaskQueue* newQueue()
     return temp;
 }
 
-void* routine()
+void* routine(void* arg)
 {
-
-    while(1)
-    {
-    	if(isEmpty())
-    	{
-    		break;
-    	}
-    	pthread_mutex_lock(&mutex);  		
-    	volatile struct node *x = head;
-    	if(x->key == 'p')
-    	{
-    		pthread_mutex_unlock(&mutex);
-    		calculate_square(x->data);
-    		pthread_mutex_lock(&mutex);
-    		deleteFirst();  
-    		pthread_mutex_unlock(&mutex);		
-    	}
-    	if(x->key == 'w')
-    	{
-    		pthread_mutex_unlock(&mutex);
-    		sleep(x->data);
-    		pthread_mutex_lock(&mutex);
-    		deleteFirst();  
-    		pthread_mutex_unlock(&mutex);		
-    	}	
+	TaskQueue* task = (TaskQueue*) arg;
+	while(!done)
+	{
+    		pthread_mutex_lock(&mutexList);  		
+    		while(task->head == NULL && !done)
+    		{
+    			pthread_cond_wait(&waitCond, &mutexList);	
+    		}
+    		long newTask = popTask(task);
+    		pthread_mutex_unlock(&mutexList);
+    		if(newTask != -1)
+    		{
+    			calculate_square(newTask);	
+    		}	
     	
-    }
-    return 0;
+    	}
+
+	pthread_mutex_unlock(&mutexList);
+	pthread_exit(NULL);
 }
 
-// get a linked list volatile keyword for variables thata re being accessed
-//convert routine to be an infite loop
-// bool volatile busy
-// set it to busy after the lock
-//if list empty then break in while
-// do calculations in parallel
-//only have lock during read/write
 int main(int argc, char* argv[])
 {
-    printf("Start \n");
     char *fn = argv[1];
     char *v = argv[2];
     int n = atoi(v);	
     pthread_mutex_init(&mutex, NULL);
     pthread_mutex_init(&mutexList,NULL);
-    pthread_cond_t waitCond = PTHREAD_COND_INITIALIZER;
+    volatile TaskQueue* task = newQueue();
     
     
   // check and parse command line options
@@ -197,7 +176,15 @@ int main(int argc, char* argv[])
   pthread_t th[n];
   
   
- 
+  for (int i = 0; i < n; i++)
+        {
+            if (pthread_create(&th[i], NULL, &routine, (void*)task) != 0) 
+                {
+                    perror("Failed to create thread");
+                    return 1;
+                }
+        }   
+  
 
 
   
@@ -206,15 +193,14 @@ int main(int argc, char* argv[])
       if (action == 'p')          // process, do some work
       {
       	pthread_mutex_lock(&mutexList);
-      	insertFirst(action,num);
+      	addTask(task,num);
       	pthread_cond_signal(&waitCond);
       	pthread_mutex_unlock(&mutexList);
       	//calculate_square(num);
       }
      else if (action == 'w')     // wait, nothing new happening
      {
-     insertFirst(action,num);
-     //sleep(num);
+     sleep(num);
      }
      else 
      {
@@ -222,19 +208,10 @@ int main(int argc, char* argv[])
       exit(EXIT_FAILURE);
      }
   }
-	
-	printf("File has been scanned \n");
-
-      for (int i = 0; i < n; i++)
-        {
-            if (pthread_create(&th[i], NULL, &routine, NULL) != 0) 
-                {
-                    perror("Failed to create thread");
-                    return 1;
-                }
-        }   
-  
+     
   fclose(fin);
+  while(task->head != NULL) {}
+  done = true;
   pthread_mutex_lock(&mutexList);
   pthread_cond_broadcast(&waitCond);
   pthread_mutex_unlock(&mutexList);
@@ -246,15 +223,12 @@ int main(int argc, char* argv[])
              return 2;
          }
     }
-    printf("Threads have been joined \n");
   
   // print results
   printf("%ld %ld %ld %ld\n", sum, odd, min, max);
   // clean up and return
   pthread_mutex_destroy(&mutex);
   pthread_mutex_destroy(&mutexList);
-  printf("End\n");
-
   return (EXIT_SUCCESS);
 }
 
