@@ -18,8 +18,6 @@ pthread_mutex_t mutex;
 pthread_mutex_t mutexList;
 pthread_cond_t waitCond = PTHREAD_COND_INITIALIZER;
 
-
-
 // function prototypes
 void calculate_square(long number);
 
@@ -58,12 +56,9 @@ void calculate_square(long number)
   pthread_mutex_unlock(&mutex);
 }
 
-
-
-
 typedef struct Task
 {
-    long t;                 //time 
+    long t;  		 //time 
     struct Task* next;      //pointer to next task 
 } Task;
 
@@ -141,6 +136,7 @@ void* routine(void* arg)
     		{
     			pthread_cond_wait(&waitCond, &mutexList);	
     		}
+
     		long newTask = popTask(task);
     		pthread_mutex_unlock(&mutexList);
     		if(newTask != -1)
@@ -161,20 +157,17 @@ int main(int argc, char* argv[])
     int n = atoi(v);	
     pthread_mutex_init(&mutex, NULL);
     pthread_mutex_init(&mutexList,NULL);
-    volatile TaskQueue* task = newQueue();
-    
+    volatile TaskQueue* task = newQueue();   
     
   // check and parse command line options
   if (argc != 3) {
     printf("Usage: sumsq <infile>\n");
     exit(EXIT_FAILURE);
   }
-
   
   // load numbers and add them to the queue
   FILE* fin = fopen(fn, "r");
   pthread_t th[n];
-  
   
   for (int i = 0; i < n; i++)
         {
@@ -184,10 +177,6 @@ int main(int argc, char* argv[])
                     return 1;
                 }
         }   
-  
-
-
-  
    while (fscanf(fin, "%c %ld\n", &action, &num) == 2) 
    {
       if (action == 'p')          // process, do some work
@@ -200,7 +189,7 @@ int main(int argc, char* argv[])
       }
      else if (action == 'w')     // wait, nothing new happening
      {
-     sleep(num);
+	sleep(num);
      }
      else 
      {
@@ -208,8 +197,8 @@ int main(int argc, char* argv[])
       exit(EXIT_FAILURE);
      }
   }
-     
-  fclose(fin);
+ 
+  fclose(fin)
   while(task->head != NULL) {}
   done = true;
   pthread_mutex_lock(&mutexList);
@@ -231,6 +220,3 @@ int main(int argc, char* argv[])
   pthread_mutex_destroy(&mutexList);
   return (EXIT_SUCCESS);
 }
-
-
-
