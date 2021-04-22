@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
      }
   }
  
-  fclose(fin)
+  fclose(fin);
   while(task->head != NULL) {}
   done = true;
   pthread_mutex_lock(&mutexList);
